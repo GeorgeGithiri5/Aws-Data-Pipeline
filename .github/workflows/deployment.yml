@@ -1,0 +1,81 @@
+name: "Deployment Job"
+
+on: 
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  terraform_deployment:
+    name: "Deploying AWS GLUE Services"
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{secret.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ''
+      TF_ACTION_WORKING_DIR: .
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Terraform Init for AWS Glue Crawlers
+        id: init-crawler
+        working-directory: deployment/crawlers
+        run: terraform init
+
+      - name: Terraform Refresh to Update Manually Update files for Glue Crawlers
+        id: destory-crawler
+        working-directory: deployment/crawlers
+        run: terraform refresh
+
+      - name: Terraform Plan for Glue Crawlers
+        id: plan-crawler
+        working-directory: deployment/crawlers
+        if: github.event_name == 'push'
+        run: terreform plan -no-color
+        continue-on-error: true
+
+      - name: Terraform Apply for Glue Crawlers
+        working-directory: deployment/crawlers
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve
+
+      - name: Upload the src folder to S3 bucket
+        working-directory: .
+        run: aws s3 sync src s3://service-script/src
+
+      - name: Terraform Init for Glue Jobs
+        id: init-jobs
+        working-directory: deployment/glue_jobs
+        run: terraform init
+
+      - name: Terraform Refresh to Update Manually Updated files for Glue jobs
+        id: destroy-jobs
+        working-directory: deployment/glue_jobs
+        run: terraform refresh
+
+      # Execution Plan for Terraform
+      - name: Terraform Plan for Glue Jobs
+        id: plan-jobs
+        working-directory: deployment/glue_jobs
+        if: github.event_name == 'push'
+        run: terraform plan -no-color
+        continue-on-error: true
+
+      - name: Terraform Apply for Glue Jobs
+        working-directory:  deployment/glue_jobs
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve
+
+
+
+
+

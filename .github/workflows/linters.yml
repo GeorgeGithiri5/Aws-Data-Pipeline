@@ -1,0 +1,34 @@
+name: linting
+
+on: [pull_request]
+
+jobs:
+  linting:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout git
+        uses: actions/checkout@v3
+
+      - name: Install python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8.10"
+      - run: python3 -m pip install -U pip setuptools wheel
+
+      - name: Get poetry
+        uses: Gr1N/setup-poetry@v7
+        with:
+          path: ~/.cache/pypoetry/virtualenvs
+          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}        
+      - run: poetry --version
+
+      - name: Install dependencies
+        run: make deps
+        env:
+          POETRY_VIRTUALENVS_CREATE: true
+
+      - name: Check pre-commit rules
+        run: make run-lint
+
+      - name: Run tests
+        run: make local-test-no-cov
