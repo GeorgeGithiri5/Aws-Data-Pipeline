@@ -13,6 +13,7 @@ isort = "^5.10.1"
 black = "^22.10.0"
 bandit = "^1.7.4"
 pre-commit = "^2.20.0"
+pydocstyle = "^6.1.1"
 
 [tool.poetry.dev-dependencies]
 

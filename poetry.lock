@@ -250,6 +250,20 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
+name = "pydocstyle"
+version = "6.1.1"
+description = "Python docstring style checker"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+snowballstemmer = "*"
+
+[package.extras]
+toml = ["toml"]
+
+[[package]]
 name = "pyflakes"
 version = "2.5.0"
 description = "passive checker of Python programs"
@@ -289,6 +303,14 @@ description = "A pure Python implementation of a sliding window memory map manag
 category = "main"
 optional = false
 python-versions = ">=3.6"
+
+[[package]]
+name = "snowballstemmer"
+version = "2.2.0"
+description = "This package provides 29 stemmers for 28 languages generated from Snowball algorithms."
+category = "main"
+optional = false
+python-versions = "*"
 
 [[package]]
 name = "stevedore"
@@ -345,7 +367,7 @@ testing = ["coverage (>=6.2)", "coverage-enable-subprocess (>=1)", "flaky (>=3.7
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "11e66b5274d42cfabdd9824f3b3c001fd930cc61411178531a73b6c6edac3304"
+content-hash = "3c743d9b610e2f469507e055cf1df675b17a2e911720bfba0d61251e58931e1c"
 
 [metadata.files]
 bandit = []
@@ -370,10 +392,12 @@ platformdirs = []
 pre-commit = []
 py4j = []
 pycodestyle = []
+pydocstyle = []
 pyflakes = []
 pyspark = []
 pyyaml = []
 smmap = []
+snowballstemmer = []
 stevedore = []
 toml = []
 tomli = []
