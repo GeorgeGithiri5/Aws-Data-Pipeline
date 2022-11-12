@@ -1,6 +1,7 @@
+
 name: "Deployment Job"
 
-on: 
+on:
   push:
     branches:
       - main
@@ -14,12 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{secret.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: ''
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: 'eu-central-1'
       TF_ACTION_WORKING_DIR: .
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v1
@@ -31,8 +32,8 @@ jobs:
         working-directory: deployment/crawlers
         run: terraform init
 
-      - name: Terraform Refresh to Update Manually Update files for Glue Crawlers
-        id: destory-crawler
+      - name: Terraform Refresh to Update Manually Updated files for Glue Crawlers
+        id: destroy-crawler
         working-directory: deployment/crawlers
         run: terraform refresh
 
@@ -40,7 +41,7 @@ jobs:
         id: plan-crawler
         working-directory: deployment/crawlers
         if: github.event_name == 'push'
-        run: terreform plan -no-color
+        run: terraform plan -no-color
         continue-on-error: true
 
       - name: Terraform Apply for Glue Crawlers
@@ -48,21 +49,41 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve
 
+        # Uploading the Github artifacts to S3
       - name: Upload the src folder to S3 bucket
         working-directory: .
         run: aws s3 sync src s3://service-script/src
 
+      # Zipping the libraries folder and uploading the artifacts to S3.
+      - shell: bash
+        run: |
+          zip -qq -r libs.zip libs
+      - name: upload the zipped library artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: libs.zip
+          path: libs.zip
+
+      - name: download the zipped library artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: libs.zip
+      - shell: bash
+        run: |
+          aws s3 cp libs.zip s3://service-script/src/
+
+        # Deploying the Glue jobs scripts
       - name: Terraform Init for Glue Jobs
         id: init-jobs
         working-directory: deployment/glue_jobs
         run: terraform init
 
-      - name: Terraform Refresh to Update Manually Updated files for Glue jobs
+      - name: Terraform Refresh to Update Manually Updated files for Glue Jobs
         id: destroy-jobs
         working-directory: deployment/glue_jobs
         run: terraform refresh
 
-      # Execution Plan for Terraform
+        # Generates an execution plan for Terraform
       - name: Terraform Plan for Glue Jobs
         id: plan-jobs
         working-directory: deployment/glue_jobs
@@ -71,11 +92,6 @@ jobs:
         continue-on-error: true
 
       - name: Terraform Apply for Glue Jobs
-        working-directory:  deployment/glue_jobs
+        working-directory: deployment/glue_jobs
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve
-
-
-
-
-
