@@ -12,6 +12,7 @@ mypy = "^0.990"
 isort = "^5.10.1"
 black = "^22.10.0"
 bandit = "^1.7.4"
+pre-commit = "^2.20.0"
 
 [tool.poetry.dev-dependencies]
 
