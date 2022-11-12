@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  jupyter:
+    container_name: aws-glue-jupyter
+    environment:
+      - DISABLE_SSL=True
+    image: glue-container
+    env_file:
+        - .env
+    build:
+        context: .
+        dockerfile: Dockerfile
+    ports:
+      - '4040:4040'
+      - '18080:18080'
+      - '8998:8998'
+      - '8888:8888'
+    restart: always
+    volumes:
+      - ./:/home/glue_user/jupyter_default_dir
+      - ./:/home/glue_user/workspace/jupyter_workspace
