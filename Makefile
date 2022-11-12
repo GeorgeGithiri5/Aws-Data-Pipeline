@@ -5,7 +5,6 @@ help: ## list all make commands available
 .PHONY: deps
 deps: ## Install dependencies
 	poetry install
-	curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
 
 .PHONY: pre-commit
 pre-commit: ## Setup pre-commit in your local repo
