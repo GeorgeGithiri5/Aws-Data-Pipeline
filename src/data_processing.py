@@ -1,4 +1,4 @@
-"""This job take raw data from kapsule database."""
+"""This job take raw data from database."""
 import json
 import sys
 
@@ -19,19 +19,15 @@ job = Job(glueContext)
 job.init(args["JOB_NAME"], args)
 job.commit()
 
-path = "s3://kapsule-bucket/data/admin"
-mysql_url = (
-    "jdbc:mysql://dball.cforczwywawk.eu-west-2.rds.amazonaws.com:3306/openclinic_dbo"
-)
-mysql_url_admin = (
-    "jdbc:mysql://dball.cforczwywawk.eu-west-2.rds.amazonaws.com:3306/ocadmin_dbo"
-)
+path = "s3://"
+mysql_url = ""
+mysql_url_admin = ""
 
 
 def get_redshift_secret():
     """Read Secret from Secret manager."""
-    secret_name = "arn:aws:secretsmanager:us-east-1:881401823878:secret:sqlworkbench!f449be75-44f3-4cb6-8f34-7d90bab3f0f8-txUjHk"  # nosec B105 # noqa: E501
-    region_name = "us-east-1"
+    secret_name = "provide arn"  # nosec B105 # noqa: E501
+    region_name = "aws region"
 
     session = boto3.session.Session()
     client = session.client(service_name="secretsmanager", region_name=region_name)
@@ -41,10 +37,10 @@ def get_redshift_secret():
     return secret
 
 
-def get_kapsule_database_secret():
+def get_database_secret():
     """Read Secret from Secret manager."""
-    secret_name = "arn:aws:secretsmanager:us-east-1:881401823878:secret:kapsule_creds-0JURRk"  # nosec B105 # noqa: E501
-    region_name = "us-east-1"
+    secret_name = "provide arn"  # nosec B105 # noqa: E501
+    region_name = "provide region"
 
     session = boto3.session.Session()
     client = session.client(service_name="secretsmanager", region_name=region_name)
@@ -64,7 +60,7 @@ def load_data_to_redshift(table, s_dframe):
 
     redshift_conn_options = {
         "url": url_link,
-        "dbtable": f"kapsule.{table}",
+        "dbtable": f"prefix.{table}",
         "user": redshift_username,
         "password": redshift_password,
         "redshiftTmpDir": args["TempDir"],
@@ -79,17 +75,17 @@ def load_data_to_redshift(table, s_dframe):
 
 def connection_to_mysql(mysql_endpoint, table):
     """Connect To RDs."""
-    kapsule_database_creds = get_kapsule_database_secret()
-    username_kapsule = kapsule_database_creds["username_kapsule"]
-    password_kapsule = kapsule_database_creds["password_kapsule"]
+    database_creds = get_database_secret()
+    username = database_creds["username"]
+    password = database_creds["password"]
 
     conn = (
         spark.read.format("jdbc")
         .option("url", mysql_endpoint)
         .option("driver", "com.mysql.jdbc.Driver")
         .option("dbtable", table)
-        .option("user", username_kapsule)
-        .option("password", password_kapsule)
+        .option("user", username)
+        .option("password", password)
         .load()
     )
 
@@ -105,20 +101,13 @@ def read_data(mysql_endpoint, table):
 def write_data_to_s3():
     """Write Data To Data Lake."""
     tables = [
-        "oc_encounters",
-        "oc_encounters_history",
-        "oc_prescriptions",
-        "oc_prestations",
-        "oc_prestations_history",
-        "oc_problems",
-        "oc_problems_history",
-        "oc_rfe",
-        "icd10",
-        "icpc2",
+        "table 1",
+        "table 2",
+        "table 3",
     ]
     for table in tables:
         dataframe = read_data(mysql_url, table)
-        path = f"s3://kapsule-bucket/data/{table}"
+        path = f"s3://path/{table}"
         dataframe.write.format("csv").option("sep", ",").option("header", "true").mode(
             "overwrite"
         ).save(path)
@@ -128,20 +117,20 @@ def write_data_to_s3():
 def write_data_to_s3_admin():
     """Write data to S3."""
     dataframe = (
-        read_data(mysql_url_admin, "adminprivate")
+        read_data(mysql_url_admin, "private-table")
         .withColumn("mobile", hash("mobile"))
         .withColumn("telephone", hash("telephone"))
     )  # Hashing mobile and telephone of a patient
 
-    path = "s3://kapsule-bucket/data/adminprivate"
+    path = "s3://path/data/private-table"
     dataframe.write.format("csv").option("sep", ",").option("header", "true").mode(
         "overwrite"
     ).save(path)
 
-    load_data_to_redshift("adminprivate", dataframe)
+    load_data_to_redshift("private-table", dataframe)
 
     dataframe = (
-        read_data(mysql_url_admin, "admin")
+        read_data(mysql_url_admin, "private-table-2")
         .withColumn("lastname", hash("lastname"))
         .withColumn("firstname", hash("firstname"))
     )  # Hashing lastname and firstname of a patient
@@ -149,7 +138,7 @@ def write_data_to_s3_admin():
     dataframe.write.format("csv").option("sep", ",").option("header", "true").mode(
         "overwrite"
     ).save(path)
-    load_data_to_redshift("admin", dataframe)
+    load_data_to_redshift("private-table-2", dataframe)
 
 
 def main():
