@@ -2,7 +2,7 @@
 
 
 
-This is the repo for writing the different data engineering tasks mainly using Apache Spark. It will store the different data engineering functions for extraction and loading data from databases and the different APIs at Marketforce.
+In this repository, I am working on a data pipeline architecture on AWS. The set up have a deployment layer built using terraform. AWS Resources used: Redshift, S3, AWS Glue. The Setup uses pyspark and is laid out in a way it's scalable for any number of jobs.
 
 
 
